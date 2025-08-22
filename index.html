@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Application Tracker</title>
+  <style>
+    :root{
+      --bg:#0f172a; --bg-soft:#111827; --card:#0b1220; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --border:#233047;
+      --shadow:0 10px 25px rgba(0,0,0,.25);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial; background:linear-gradient(180deg,#0b1220,#0f172a); color:var(--text)}
+    .wrap{max-width:1100px;margin:auto;padding:28px}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .title{display:flex;gap:12px;align-items:center}
+    .title h1{margin:0;font-size:1.25rem;font-weight:700}
+    .chip{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.35); padding:4px 8px;border-radius:999px;font-size:.75rem}
+    .bar{display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px}
+    .card{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+    .controls{padding:12px}
+    input,select,button,textarea{background:#0b1220;color:var(--text);border:1px solid #22304a;border-radius:12px;padding:10px 12px;font:inherit}
+    input::placeholder{color:var(--muted)}
+    button{cursor:pointer}
+    button.primary{background:linear-gradient(90deg,#22c55e,#16a34a);border:none}
+    button.ghost{background:rgba(255,255,255,.04)}
+    button.warn{background:rgba(245,158,11,.15);border-color:#f59e0b}
+    button.danger{background:rgba(239,68,68,.15);border-color:#ef4444}
+
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    thead th{font-size:.8rem; color:var(--muted); text-align:left;padding:0 12px}
+    tbody td{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:10px 12px}
+    tbody tr{transition:transform .06s ease}
+    tbody tr:hover{transform:translateY(-1px)}
+    tbody td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
+    tbody td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+    .status{display:inline-grid;place-items:center;padding:.2rem .5rem;border-radius:999px;font-size:.75rem}
+    .s-applied{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);color:#93c5fd}
+    .s-interview{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fcd34d}
+    .s-offer{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#86efac}
+    .s-rejected{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#fca5a5}
+
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .hidden{display:none}
+    .muted{color:var(--muted)}
+    .right{display:flex;gap:8px;justify-content:flex-end}
+    .stats{display:flex;gap:14px;flex-wrap:wrap}
+    .pill{background:rgba(255,255,255,.04);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:.8rem}
+    footer{margin-top:22px;color:var(--muted);font-size:.8rem;display:flex;justify-content:space-between;align-items:center}
+    a{color:#93c5fd;text-decoration:none}
+
+    @media (max-width:850px){
+      .bar{grid-template-columns:1fr 1fr 1fr;grid-auto-rows:minmax(0,auto)}
+      .right{justify-content:stretch}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <h1>Job Application Tracker</h1>
+        <span class="chip">Vanilla JS</span>
+      </div>
+      <div class="stats" id="stats"></div>
+    </header>
+
+    <section class="card controls">
+      <div class="bar">
+        <input id="search" placeholder="Search company, role or notes…" />
+        <select id="filterStatus" title="Filter by status">
+          <option value="">All statuses</option>
+          <option>Applied</option>
+          <option>Interview</option>
+          <option>Offer</option>
+          <option>Rejected</option>
+        </select>
+        <select id="sortBy" title="Sort">
+          <option value="-date">Newest first</option>
+          <option value="date">Oldest first</option>
+          <option value="company">Company A→Z</option>
+          <option value="role">Role A→Z</option>
+          <option value="status">Status</option>
+        </select>
+        <button class="ghost" id="importBtn">Import CSV</button>
+        <div class="right">
+          <button class="warn" id="clearBtn" title="Clear all">Clear</button>
+          <button class="ghost" id="addDemo">Demo Data</button>
+          <button class="primary" id="addBtn">+ Add</button>
+          <button class="ghost" id="exportBtn">Export CSV</button>
+        </div>
+      </div>
+      <input id="fileInput" type="file" accept=".csv" class="hidden" />
+    </section>
+
+    <section class="card" style="padding:10px 12px 2px">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:16ch">Date</th>
+            <th style="width:22ch">Company</th>
+            <th style="width:24ch">Role</th>
+            <th style="width:15ch">Status</th>
+            <th>Notes</th>
+            <th style="width:12ch">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <footer>
+      <span>Data is stored locally in your browser (no backend needed).</span>
+      <span>Made with <span aria-hidden>🧠</span> Vanilla JS.</span>
+    </footer>
+  </div>
+
+  <template id="rowTemplate">
+    <tr>
+      <td data-key="date"></td>
+      <td data-key="company" contenteditable></td>
+      <td data-key="role" contenteditable></td>
+      <td>
+        <select data-key="status" class="statusSelect">
+          <option>Applied</option>
+          <option>Interview</option>
+          <option>Offer</option>
+          <option>Rejected</option>
+        </select>
+      </td>
+      <td data-key="notes" contenteditable></td>
+      <td>
+        <button class="ghost small" data-act="del">Delete</button>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    const storeKey = 'job-tracker.v1';
+    const qs = (s, el=document) => el.querySelector(s);
+    const qsa = (s, el=document) => [...el.querySelectorAll(s)];
+
+    const state = {
+      items: load(),
+      filter: { q:"", status:"", sort:"-date" }
+    };
+
+    // Initial render
+    render();
+
+    // Event wiring
+    qs('#search').addEventListener('input', e => { state.filter.q = e.target.value.trim().toLowerCase(); render(); });
+    qs('#filterStatus').addEventListener('change', e => { state.filter.status = e.target.value; render(); });
+    qs('#sortBy').addEventListener('change', e => { state.filter.sort = e.target.value; render(); });
+    qs('#addBtn').addEventListener('click', addItemPrompt);
+    qs('#clearBtn').addEventListener('click', clearAll);
+    qs('#exportBtn').addEventListener('click', exportCSV);
+    qs('#importBtn').addEventListener('click', () => qs('#fileInput').click());
+    qs('#fileInput').addEventListener('change', importCSV);
+    qs('#addDemo').addEventListener('click', addDemo);
+
+    function addItemPrompt(){
+      const company = prompt('Company name?'); if(!company) return;
+      const role = prompt('Role / Position?') || '';
+      const status = prompt('Status (Applied, Interview, Offer, Rejected)?', 'Applied') || 'Applied';
+      const notes = prompt('Notes (optional)') || '';
+      const it = { id: Date.now(), date: new Date().toISOString().slice(0,10), company, role, status: normalizeStatus(status), notes };
+      state.items.unshift(it); save(); render();
+    }
+
+    function normalizeStatus(s){
+      s = String(s||'').toLowerCase();
+      if(s.startsWith('int')) return 'Interview';
+      if(s.startsWith('off')) return 'Offer';
+      if(s.startsWith('rej')) return 'Rejected';
+      return 'Applied';
+    }
+
+    function clearAll(){
+      if(confirm('This will remove all saved applications. Continue?')){
+        state.items = []; save(); render();
+      }
+    }
+
+    function addDemo(){
+      const demo = [
+        {id:1,date:iso(-2),company:'DataWorx',role:'Data Analyst (Intern)',status:'Applied',notes:'Sent via LinkedIn'},
+        {id:2,date:iso(-1),company:'Mazars',role:'AI Engineer (Intern)',status:'Interview',notes:'Tech call next week'},
+        {id:3,date:iso(0),company:'UM6SS',role:'Research Assistant',status:'Offer',notes:'Part-time during semester'},
+      ];
+      // Avoid id collisions
+      const ts = Date.now();
+      demo.forEach((d,i)=> d.id = ts + i);
+      state.items.unshift(...demo); save(); render();
+    }
+
+    function iso(deltaDays){
+      const d = new Date(); d.setDate(d.getDate()+deltaDays); return d.toISOString().slice(0,10);
+    }
+
+    function load(){
+      try{ return JSON.parse(localStorage.getItem(storeKey)) || [] }catch{ return [] }
+    }
+    function save(){ localStorage.setItem(storeKey, JSON.stringify(state.items)); }
+
+    function applyFilters(items){
+      const {q,status,sort} = state.filter;
+      let res = items.filter(it =>
+        (!status || it.status===status) &&
+        (!q || [it.company,it.role,it.notes].join(' ').toLowerCase().includes(q))
+      );
+      const cmp = (a,b)=> a>b?1:a<b?-1:0;
+      if(sort==='date') res.sort((a,b)=> cmp(a.date,b.date));
+      else if(sort==='-date') res.sort((a,b)=> cmp(b.date,a.date));
+      else if(sort==='company') res.sort((a,b)=> cmp(a.company.toLowerCase(), b.company.toLowerCase()));
+      else if(sort==='role') res.sort((a,b)=> cmp(a.role.toLowerCase(), b.role.toLowerCase()));
+      else if(sort==='status') res.sort((a,b)=> cmp(a.status,b.status));
+      return res;
+    }
+
+    function render(){
+      const rows = qs('#rows'); rows.innerHTML = '';
+      const items = applyFilters(state.items);
+      // Stats
+      const total = state.items.length;
+      const byStatus = ['Applied','Interview','Offer','Rejected'].map(s => ({s, n: state.items.filter(i=>i.status===s).length}));
+      qs('#stats').innerHTML = [
+        `<span class="pill">Total: <b>${total}</b></span>`,
+        ...byStatus.map(x => `<span class="pill">${x.s}: <b>${x.n}</b></span>`)
+      ].join('');
+
+      if(items.length===0){
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6; td.className='muted'; td.style.padding='22px 12px';
+        td.textContent = 'No applications yet. Click + Add or load Demo Data.';
+        tr.appendChild(td); rows.appendChild(tr); return;
+      }
+
+      const tpl = qs('#rowTemplate');
+      for(const it of items){
+        const tr = tpl.content.cloneNode(true);
+        const tds = qsa('[data-key]', tr);
+        tds.forEach(td => {
+          const key = td.getAttribute('data-key');
+          if(key==='date') td.textContent = it.date;
+          else if(key==='status'){} // handled by select below
+          else td.textContent = it[key] || '';
+        });
+        const sel = qs('select[data-key="status"]', tr);
+        sel.value = it.status; decorateStatus(sel);
+        sel.addEventListener('change', e=>{ it.status = e.target.value; save(); render(); });
+
+        qsa('[data-key][contenteditable]', tr).forEach(ed => {
+          ed.addEventListener('blur', ()=>{ const key=ed.getAttribute('data-key'); it[key]=ed.textContent.trim(); save(); });
+          ed.addEventListener('keypress', e=>{ if(e.key==='Enter'){ e.preventDefault(); ed.blur(); }});
+        });
+
+        qs('[data-act="del"]', tr).addEventListener('click', ()=>{
+          if(confirm('Delete this entry?')){ state.items = state.items.filter(x=>x.id!==it.id); save(); render(); }
+        });
+
+        rows.appendChild(tr);
+      }
+
+      // After rows are in DOM, decorate all status selects
+      qsa('select.statusSelect').forEach(decorateStatus);
+    }
+
+    function decorateStatus(sel){
+      const cls = {
+        Applied:'s-applied', Interview:'s-interview', Offer:'s-offer', Rejected:'s-rejected'
+      }[sel.value] || 's-applied';
+      sel.className = 'statusSelect status ' + cls;
+    }
+
+    // CSV helpers
+    function exportCSV(){
+      const headers = ['date','company','role','status','notes'];
+      const lines = [headers.join(',')].concat(state.items.map(it => headers.map(h => csvCell(it[h]||'')).join(',')));
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), {href:url, download:'applications.csv'});
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    function csvCell(v){
+      const s = String(v).replaceAll('"','""');
+      return s.includes(',')||s.includes('\n')||s.includes('"') ? `"${s}"` : s;
+    }
+    async function importCSV(e){
+      const file = e.target.files[0]; if(!file) return;
+      const text = await file.text();
+      const rows = parseCSV(text); if(rows.length===0) return alert('Empty CSV');
+      const headers = rows.shift().map(h=>h.trim().toLowerCase());
+      const idx = (h)=> headers.indexOf(h);
+      const got = r => ({
+        id: Date.now() + Math.random(),
+        date: r[idx('date')] || new Date().toISOString().slice(0,10),
+        company: r[idx('company')]||'',
+        role: r[idx('role')]||'',
+        status: normalizeStatus(r[idx('status')]),
+        notes: r[idx('notes')]||''
+      });
+      const imported = rows.map(got);
+      state.items.unshift(...imported); save(); render();
+      e.target.value = '';
+    }
+    function parseCSV(str){
+      const out=[], re=/\s*(?:"([^"]*(?:""[^"]*)*)"|([^,]*))\s*(?:,|$)/gy; // RFC4180-ish
+      let row=[]; let m; let lastIndex=0;
+      str.split(/\r?\n/).forEach(line=>{
+        if(line.trim()===''&&row.length===0) return; // skip empties
+        re.lastIndex = 0; row=[]; while((m=re.exec(line))!==null){ row.push((m[1]||m[2]||'').replaceAll('""','"')); if(m.index===lastIndex && re.lastIndex===lastIndex) break; lastIndex = re.lastIndex; }
+        out.push(row);
+      });
+      return out.filter(r=>r.length>0);
+    }
+  </script>
+</body>
+</html>
